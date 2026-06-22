@@ -8,6 +8,12 @@ const ICON = {
   poor: XCircle,
 };
 
+const ACTION_LABEL = {
+  good: "Monitor",
+  "needs-improvement": "Tune next",
+  poor: "Fix first",
+};
+
 // Gauge: lower is better. The track shows good | needs | poor zones; the marker
 // sits at the metric's position on a scale ending at 2x the poor threshold.
 function Gauge({ metric }: { metric: AuditMetric }) {
@@ -74,6 +80,10 @@ export function MetricCard({ metric }: { metric: AuditMetric }) {
         </div>
       </div>
       <Gauge metric={metric} />
+      <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-card-border bg-background/45 px-3 py-2">
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Action</span>
+        <span className={`text-[11px] font-bold ${cls.text}`}>{ACTION_LABEL[metric.rating]}</span>
+      </div>
     </div>
   );
 }

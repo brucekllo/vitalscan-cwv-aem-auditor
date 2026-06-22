@@ -292,6 +292,19 @@
     opacity: 1;
   }
 
+  @keyframes scan-progress {
+    0% {
+      transform: translateX(-115%);
+    }
+    100% {
+      transform: translateX(165%);
+    }
+  }
+
+  .animate-scan-progress {
+    animation: scan-progress 1.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
   /**
    * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
    * This way they can stack/compound. Both will overlap the parent's borders!

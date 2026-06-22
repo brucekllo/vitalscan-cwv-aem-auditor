@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import { METRIC_ORDER, THRESHOLDS, type AuditResult, type MetricKey } from "@shared/schema";
 import { formatMetric, RATING_CLASS, RATING_LABEL, formatTime, scoreBand } from "@/lib/format";
-import { ArrowUpDown, Trash2, TrendingUp, Inbox } from "lucide-react";
+import { ArrowUpDown, Trash2, TrendingUp, Inbox, GitCompareArrows } from "lucide-react";
 
 type SortKey = "url" | "timestamp" | "overallScore" | MetricKey;
 
@@ -175,6 +175,19 @@ export function History({
 
   return (
     <div className="space-y-6">
+      <div className="grid sm:grid-cols-3 gap-3">
+        {[
+          ["Audits", history.length],
+          ["Unique URLs", new Set(history.map((h) => h.url)).size],
+          ["Trend groups", repeatedUrls.length],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-2xl border border-card-border bg-card/92 p-4 shadow-dashboard">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
+            <div className="mt-2 text-xl font-extrabold tnum">{value}</div>
+          </div>
+        ))}
+      </div>
+
       <div className="rounded-2xl border border-card-border bg-card/92 overflow-hidden shadow-dashboard">
         <div className="flex items-center justify-between px-4 py-3 border-b border-card-border bg-background/35">
           <div>
@@ -233,7 +246,10 @@ export function History({
 
       {repeatedUrls.length > 0 && (
         <div className="space-y-4">
-          <h2 className="font-bold text-sm">Trends</h2>
+          <div className="flex items-center gap-2">
+            <GitCompareArrows className="h-4 w-4 text-primary" />
+            <h2 className="font-bold text-sm">Repeated URL trends</h2>
+          </div>
           <div className="grid lg:grid-cols-2 gap-4">
             {repeatedUrls.map(({ url, audits }) => (
               <TrendChart key={url} url={url} audits={audits} />

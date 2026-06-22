@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { METRIC_ORDER, type AuditResult } from "@shared/schema";
+import { METRIC_ORDER, type AuditResult, type MetricKey } from "@shared/schema";
 import { Logo } from "@/components/Logo";
 import { MetricCard } from "@/components/MetricCard";
 import { OverallScore } from "@/components/OverallScore";
@@ -26,6 +26,11 @@ import {
   Database,
   FileText,
   ArrowRight,
+  Target,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  ShieldCheck,
 } from "lucide-react";
 
 function useTheme() {
@@ -39,6 +44,24 @@ function useTheme() {
 }
 
 const EXAMPLES = ["https://www.adobe.com", "https://web.dev", "https://wikipedia.org"];
+
+const METRIC_CATEGORY: Record<MetricKey, string> = {
+  LCP: "Loading",
+  CLS: "Stability",
+  INP: "Responsiveness",
+  TBT: "JavaScript",
+  FCP: "Render path",
+  TTFB: "Server/CDN",
+};
+
+const FIX_HINT: Record<MetricKey, string> = {
+  LCP: "Prioritize hero image, critical CSS, and cacheable HTML.",
+  CLS: "Reserve media/ad slots and avoid late layout injection.",
+  INP: "Break long handlers and reduce main-thread contention.",
+  TBT: "Split bundles, defer non-critical scripts, and trim third-party JS.",
+  FCP: "Remove render-blocking CSS and preload critical assets.",
+  TTFB: "Tune origin response, edge cache, redirects, and shielding.",
+};
 
 export default function Dashboard() {
   const { dark, toggle } = useTheme();
@@ -257,6 +280,7 @@ export default function Dashboard() {
                 </div>
 
                 <OverallScore result={result} />
+                <ExecutiveSummary result={result} onOpenHistory={() => setTab("history")} />
 
                 {/* Scorecards */}
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -350,6 +374,97 @@ function HeroHighlights({ historyCount, result }: { historyCount: number; result
   );
 }
 
+function ExecutiveSummary({
+  result,
+  onOpenHistory,
+}: {
+  result: AuditResult;
+  onOpenHistory: () => void;
+}) {
+  const problemMetrics = METRIC_ORDER.map((key) => result.metrics[key]).filter((m) => m.rating !== "good");
+  const topIssues = [...problemMetrics].sort((a, b) => a.score - b.score).slice(0, 3);
+  const goodCount = METRIC_ORDER.length - problemMetrics.length;
+  const StatusIcon =
+    result.overallRating === "good"
+      ? CheckCircle2
+      : result.overallRating === "poor"
+        ? XCircle
+        : AlertTriangle;
+  const headline =
+    result.overallRating === "good"
+      ? "Performance posture is healthy"
+      : result.overallRating === "poor"
+        ? "Prioritize remediation before release"
+        : "Targeted tuning should lift this page";
+
+  return (
+    <section className="grid lg:grid-cols-[0.85fr_1.15fr] gap-4">
+      <div className="rounded-2xl border border-card-border bg-card/92 p-5 shadow-dashboard">
+        <div className="flex items-start gap-3">
+          <span className="h-10 w-10 rounded-xl bg-primary/10 text-primary inline-flex items-center justify-center shrink-0">
+            <StatusIcon className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-sm font-bold">{headline}</h2>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              {goodCount} metrics are good, {problemMetrics.length} need attention. Use this as a triage view before diving into the detailed recommendations below.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {[
+            ["Good", goodCount, "text-good"],
+            ["Review", problemMetrics.filter((m) => m.rating === "needs-improvement").length, "text-needs"],
+            ["Poor", problemMetrics.filter((m) => m.rating === "poor").length, "text-poor"],
+          ].map(([label, value, cls]) => (
+            <div key={label} className="rounded-xl border border-card-border bg-background/55 px-3 py-2">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+              <div className={`text-lg font-extrabold tnum ${cls}`}>{value}</div>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={onOpenHistory}
+          className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-full border border-card-border bg-background/55 px-3 py-2 text-xs font-semibold hover-elevate"
+          data-testid="button-open-history-summary"
+        >
+          <HistoryIcon className="h-3.5 w-3.5" />
+          Compare in History
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-card-border bg-card/92 p-5 shadow-dashboard">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-sm font-bold">Priority fixes</h2>
+            <p className="text-xs text-muted-foreground mt-1">Top issues ranked by metric score impact.</p>
+          </div>
+          <Target className="h-4 w-4 text-primary" />
+        </div>
+        {topIssues.length === 0 ? (
+          <div className="rounded-xl border border-good/25 bg-good-soft p-4 text-sm">
+            <span className="font-semibold text-good">No priority fixes.</span>{" "}
+            Keep monitoring regressions through History and Lighthouse CI.
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-3 gap-3">
+            {topIssues.map((metric, index) => (
+              <div key={metric.key} className="rounded-xl border border-card-border bg-background/55 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">P{index + 1}</span>
+                  <span className="text-[10px] rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{METRIC_CATEGORY[metric.key]}</span>
+                </div>
+                <div className="mt-2 text-sm font-extrabold">{metric.key}</div>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{FIX_HINT[metric.key]}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function EvidenceStrip({ result }: { result: AuditResult }) {
   const items: [string, string][] = [
     ["HTTP", String(result.statusCode || "—")],
@@ -411,15 +526,53 @@ function EmptyState() {
 }
 
 function LoadingSkeleton() {
+  const stages = [
+    "Fetching response",
+    "Measuring TTFB",
+    "Scanning HTML",
+    "Detecting AEM",
+    "Building recommendations",
+  ];
   return (
-    <div className="space-y-6 animate-pulse">
-      <div className="h-36 rounded-2xl bg-muted/70" />
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-card-border bg-card/92 p-5 shadow-dashboard">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 text-xs font-semibold text-primary">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Audit in progress
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Server-side scan is collecting response evidence, estimating metrics, and preparing the report.
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Typical time</div>
+            <div className="text-sm font-bold tnum">5–15 s</div>
+          </div>
+        </div>
+        <div className="mt-5 grid sm:grid-cols-5 gap-2">
+          {stages.map((stage, index) => (
+            <div key={stage} className="rounded-xl border border-card-border bg-background/55 p-3">
+              <div className="flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center text-[10px] font-bold">
+                  {index + 1}
+                </span>
+                <span className="text-[11px] font-semibold">{stage}</span>
+              </div>
+              <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div className="h-full w-2/3 rounded-full bg-primary animate-scan-progress" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="h-32 rounded-xl bg-muted/70" />
         ))}
       </div>
-      <div className="h-44 rounded-2xl bg-muted/70" />
+      <div className="h-44 rounded-2xl bg-muted/70 animate-pulse" />
     </div>
   );
 }
