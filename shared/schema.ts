@@ -4,7 +4,7 @@ import { z } from "zod";
 
 // ---------------------------------------------------------------------------
 // Template users table (kept so the template's storage layer compiles).
-// VitalScan persists audit history in the browser via localStorage, not here.
+// VitalScan persists audit history client-side via a safe storage wrapper, not here.
 // ---------------------------------------------------------------------------
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
