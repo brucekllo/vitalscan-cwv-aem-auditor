@@ -1,0 +1,121 @@
+name: Lighthouse CI
+
+on:
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lighthouse:
+    name: Lighthouse audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run Lighthouse CI
+        id: lhci
+        continue-on-error: true
+        run: |
+          npm install -g @lhci/cli@0.14.x
+          lhci autorun --config=./lighthouserc.json | tee lhci-output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Parse Lighthouse results
+        id: parse
+        if: always()
+        run: |
+          # Find the latest LHCI manifest and extract the median performance score.
+          MANIFEST=$(ls -t .lighthouseci/manifest.json 2>/dev/null | head -n1 || true)
+          if [ -n "$MANIFEST" ] && [ -f "$MANIFEST" ]; then
+            node -e '
+              const fs = require("fs");
+              const m = JSON.parse(fs.readFileSync(process.env.MANIFEST, "utf8"));
+              const rep = m.find(r => r.isRepresentativeRun) || m[0];
+              const s = JSON.parse(fs.readFileSync(rep.jsonPath, "utf8"));
+              const cats = s.categories;
+              const a = s.audits;
+              const pct = v => Math.round((v ?? 0) * 100);
+              const ms = id => (a[id]?.numericValue ?? 0).toFixed(0);
+              const out = [
+                `score=${pct(cats.performance.score)}`,
+                `lcp=${ms("largest-contentful-paint")}`,
+                `cls=${(a["cumulative-layout-shift"]?.numericValue ?? 0).toFixed(3)}`,
+                `tbt=${ms("total-blocking-time")}`,
+                `fcp=${ms("first-contentful-paint")}`,
+              ].join("\n");
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, out + "\n");
+            '
+          else
+            echo "score=n/a" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          MANIFEST: .lighthouseci/manifest.json
+
+      - name: Comment Lighthouse summary on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const score = `${{ steps.parse.outputs.score }}`;
+            const lcp = `${{ steps.parse.outputs.lcp }}`;
+            const cls = `${{ steps.parse.outputs.cls }}`;
+            const tbt = `${{ steps.parse.outputs.tbt }}`;
+            const fcp = `${{ steps.parse.outputs.fcp }}`;
+            const band = (n) => (n >= 90 ? '🟢 Good' : n >= 50 ? '🟠 Needs Improvement' : '🔴 Poor');
+            const num = parseInt(score, 10);
+            const scoreLabel = isNaN(num) ? score : `${num} ${band(num)}`;
+            const passLcp = lcp !== '' && Number(lcp) < 2500;
+            const passCls = cls !== '' && Number(cls) < 0.1;
+            const passTbt = tbt !== '' && Number(tbt) < 200;
+            const mark = (ok) => (ok ? '✅' : '❌');
+            const body = [
+              '## 🔦 Lighthouse CI',
+              '',
+              `**Performance score:** ${scoreLabel}`,
+              '',
+              '| Metric | Value | Threshold | Status |',
+              '| --- | ---: | --- | :---: |',
+              `| LCP | ${lcp} ms | < 2500 ms | ${mark(passLcp)} |`,
+              `| CLS | ${cls} | < 0.1 | ${mark(passCls)} |`,
+              `| TBT | ${tbt} ms | < 200 ms | ${mark(passTbt)} |`,
+              `| FCP | ${fcp} ms | < 1800 ms (warn) | ℹ️ |`,
+              '',
+              `_Thresholds enforced via \`lighthouserc.json\`. Performance gate: score > 0.8._`,
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const marker = '<!-- lighthouse-ci-comment -->';
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            const finalBody = `${marker}\n${body}`;
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body: finalBody });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body: finalBody });
+            }
+
+      - name: Fail if thresholds breached
+        if: always()
+        run: |
+          if [ "${{ steps.lhci.outputs.exit_code }}" != "0" ]; then
+            echo "Lighthouse assertions failed — see the PR comment and logs above."
+            exit 1
+          fi
+          echo "Lighthouse assertions passed."
