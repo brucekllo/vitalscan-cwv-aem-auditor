@@ -20,7 +20,7 @@ function Gauge({ metric }: { metric: AuditMetric }) {
 
   return (
     <div className="mt-3" aria-hidden="true">
-      <div className="relative h-2 rounded-full overflow-hidden bg-muted">
+      <div className="relative h-2.5 rounded-full overflow-hidden bg-muted shadow-inner-soft">
         <div className="absolute inset-y-0 left-0 bg-good/35" style={{ width: `${goodPct}%` }} />
         <div
           className="absolute inset-y-0 bg-needs/35"
@@ -33,7 +33,7 @@ function Gauge({ metric }: { metric: AuditMetric }) {
       </div>
       <div className="relative h-3">
         <div
-          className={`absolute top-0 -translate-x-1/2 h-3 w-[3px] rounded ${RATING_CLASS[metric.rating].bar}`}
+          className={`absolute top-0 -translate-x-1/2 h-4 w-1 rounded-full ring-2 ring-card ${RATING_CLASS[metric.rating].bar}`}
           style={{ left: `${markerPct}%` }}
         />
       </div>
@@ -52,13 +52,13 @@ export function MetricCard({ metric }: { metric: AuditMetric }) {
   const Icon = ICON[metric.rating];
   return (
     <div
-      className="rounded-lg border border-card-border bg-card p-4 flex flex-col"
+      className="metric-card-glow rounded-xl border border-card-border bg-card/92 p-4 flex flex-col shadow-dashboard transition-transform duration-200 hover:-translate-y-0.5"
       data-testid={`card-metric-${metric.key}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-sm">{t.label}</span>
+            <span className="font-bold text-sm tracking-tight">{t.label}</span>
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1 ${cls.badge}`}>
               <Icon className="h-3 w-3" />
               {RATING_LABEL[metric.rating]}
@@ -67,10 +67,10 @@ export function MetricCard({ metric }: { metric: AuditMetric }) {
           <div className="text-xs text-muted-foreground mt-0.5">{t.name}</div>
         </div>
         <div className="text-right">
-          <div className={`text-xl font-bold tnum leading-none ${cls.text}`} data-testid={`text-value-${metric.key}`}>
+          <div className={`text-xl font-extrabold tnum leading-none ${cls.text}`} data-testid={`text-value-${metric.key}`}>
             {formatMetric(metric.key, metric.value)}
           </div>
-          <div className="text-[10px] text-muted-foreground tnum mt-1">score {metric.score}</div>
+          <div className="text-[10px] text-muted-foreground tnum mt-1">metric score {metric.score}</div>
         </div>
       </div>
       <Gauge metric={metric} />

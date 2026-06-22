@@ -35,7 +35,7 @@ function TrendChart({ url, audits }: { url: string; audits: AuditResult[] }) {
   });
 
   return (
-    <div className="rounded-lg border border-card-border bg-card p-4" data-testid={`trend-${url}`}>
+    <div className="rounded-2xl border border-card-border bg-card/92 p-4 shadow-dashboard" data-testid={`trend-${url}`}>
       <div className="flex items-center gap-2 mb-1">
         <TrendingUp className="h-4 w-4 text-primary" />
         <span className="text-sm font-semibold truncate">{url}</span>
@@ -44,7 +44,7 @@ function TrendChart({ url, audits }: { url: string; audits: AuditResult[] }) {
       <p className="text-[10px] text-muted-foreground mb-3">
         Values normalized to each metric's poor threshold (lower is better).
       </p>
-      <div style={{ width: "100%", height: 220 }}>
+      <div className="rounded-xl bg-background/45 p-2" style={{ width: "100%", height: 220 }}>
         <ResponsiveContainer>
           <LineChart data={data} margin={{ top: 5, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -148,10 +148,12 @@ export function History({
 
   if (history.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-card-border bg-card p-12 text-center">
-        <Inbox className="h-8 w-8 mx-auto text-muted-foreground/50 mb-3" />
-        <p className="text-sm font-medium">No audits yet</p>
-        <p className="text-xs text-muted-foreground mt-1">
+      <div className="rounded-2xl border border-dashed border-card-border bg-card/72 p-12 text-center shadow-dashboard">
+        <div className="mx-auto mb-3 h-12 w-12 rounded-2xl border border-card-border bg-background/55 flex items-center justify-center">
+          <Inbox className="h-6 w-6 text-muted-foreground/60" />
+        </div>
+        <p className="text-base font-bold">No audits yet</p>
+        <p className="text-sm text-muted-foreground mt-1">
           Run an audit on the Audit tab — results are saved here automatically.
         </p>
       </div>
@@ -173,12 +175,15 @@ export function History({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-card-border bg-card overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-card-border">
-          <h2 className="font-semibold text-sm">Audit history</h2>
+      <div className="rounded-2xl border border-card-border bg-card/92 overflow-hidden shadow-dashboard">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-card-border bg-background/35">
+          <div>
+            <h2 className="font-bold text-sm">Audit history</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{history.length} saved result{history.length === 1 ? "" : "s"}</p>
+          </div>
           <button
             onClick={onClear}
-            className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border border-card-border hover-elevate"
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-card-border bg-card hover-elevate"
             data-testid="button-clear-history"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -187,7 +192,7 @@ export function History({
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
-            <thead className="bg-muted/50 sticky top-0">
+            <thead className="bg-muted/70 sticky top-0">
               <tr>
                 <Th k="url" label="URL" />
                 <Th k="timestamp" label="When" />
@@ -201,7 +206,7 @@ export function History({
               {sorted.map((a) => (
                 <tr
                   key={a.id}
-                  className="border-t border-card-border hover-elevate cursor-pointer"
+                  className="border-t border-card-border hover:bg-muted/35 cursor-pointer"
                   onClick={() => onSelect(a)}
                   data-testid={`row-audit-${a.id}`}
                 >
@@ -228,7 +233,7 @@ export function History({
 
       {repeatedUrls.length > 0 && (
         <div className="space-y-4">
-          <h2 className="font-semibold text-sm">Trends</h2>
+          <h2 className="font-bold text-sm">Trends</h2>
           <div className="grid lg:grid-cols-2 gap-4">
             {repeatedUrls.map(({ url, audits }) => (
               <TrendChart key={url} url={url} audits={audits} />

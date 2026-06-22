@@ -35,7 +35,8 @@ export function OverallScore({ result }: { result: AuditResult }) {
   const total = Object.values(result.metrics).length;
 
   return (
-    <div className="rounded-lg border border-card-border bg-card p-5 flex flex-col sm:flex-row items-center gap-5">
+    <div className="relative overflow-hidden rounded-2xl border border-card-border bg-card/92 p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-5 shadow-dashboard">
+      <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
       <div className="relative shrink-0" style={{ width: 128, height: 128 }}>
         <svg width="128" height="128" viewBox="0 0 128 128" className="-rotate-90">
           <circle cx="64" cy="64" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
@@ -59,20 +60,32 @@ export function OverallScore({ result }: { result: AuditResult }) {
           <span className="text-[10px] text-muted-foreground uppercase tracking-wide">/ 100</span>
         </div>
       </div>
-      <div className="flex-1 text-center sm:text-left">
-        <span className={`text-xs font-bold px-2 py-1 rounded-full ${RATING_CLASS[band].badge}`}>
+      <div className="relative flex-1 text-center sm:text-left">
+        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${RATING_CLASS[band].badge}`}>
           {RATING_LABEL[band]}
         </span>
-        <p className="text-sm font-semibold mt-2">
+        <p className="text-base font-bold mt-3">
           {passCount === total
             ? "All metrics pass"
             : `${passCount} of ${total} metrics in the good range`}
         </p>
-        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+        <p className="text-xs text-muted-foreground mt-2 leading-relaxed max-w-3xl">
           Score = normalized weighted average of Lighthouse-weighted metrics present:
           FCP&nbsp;10%, LCP&nbsp;25%, TBT&nbsp;30%, CLS&nbsp;25% (Speed Index excluded; weights renormalized to 100).
           INP and TTFB are shown for diagnosis but excluded from the score. Bands: 0–49 poor, 50–89 needs improvement, 90–100 good.
         </p>
+        <div className="mt-4 grid grid-cols-3 gap-2 max-w-md mx-auto sm:mx-0">
+          {[
+            ["Pass", passCount],
+            ["Review", total - passCount],
+            ["Total", total],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-lg border border-card-border bg-background/55 px-3 py-2">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+              <div className="text-sm font-extrabold tnum">{value}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

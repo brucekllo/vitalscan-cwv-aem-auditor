@@ -32,7 +32,7 @@ function CopyBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="relative group">
-      <pre className="text-[11px] leading-relaxed font-mono bg-muted rounded-md p-3 overflow-x-auto border border-card-border whitespace-pre-wrap break-all">
+      <pre className="text-[11px] leading-relaxed font-mono bg-muted/80 rounded-lg p-3 overflow-x-auto border border-card-border whitespace-pre-wrap break-all shadow-inner-soft">
         {code}
       </pre>
       <button
@@ -45,7 +45,7 @@ function CopyBlock({ code }: { code: string }) {
             () => {},
           );
         }}
-        className="absolute top-2 right-2 inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-card border border-card-border hover-elevate"
+        className="absolute top-2 right-2 inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-card border border-card-border hover-elevate"
         data-testid="button-copy-snippet"
       >
         {copied ? <Check className="h-3 w-3 text-good" /> : <Copy className="h-3 w-3" />}
@@ -61,8 +61,8 @@ export function RecommendationsPanel({ result }: { result: AuditResult }) {
 
   if (!hasAny) {
     return (
-      <div className="rounded-lg border border-card-border bg-card p-5">
-        <h2 className="font-semibold text-sm mb-1">Recommendations</h2>
+      <div className="rounded-2xl border border-card-border bg-card/92 p-5 shadow-dashboard">
+        <h2 className="font-bold text-sm mb-1">Recommendations</h2>
         <p className="text-sm text-muted-foreground">
           Every metric is in the good range. No remediation needed.
         </p>
@@ -71,8 +71,8 @@ export function RecommendationsPanel({ result }: { result: AuditResult }) {
   }
 
   return (
-    <div className="rounded-lg border border-card-border bg-card p-5">
-      <h2 className="font-semibold text-sm mb-1">Recommendations</h2>
+    <div className="rounded-2xl border border-card-border bg-card/92 p-5 shadow-dashboard">
+      <h2 className="font-bold text-sm mb-1">Recommendations</h2>
       <p className="text-xs text-muted-foreground mb-4">
         Grouped fixes for every metric rated Needs Improvement or Poor.
       </p>
@@ -80,16 +80,18 @@ export function RecommendationsPanel({ result }: { result: AuditResult }) {
         {REC_GROUPS.filter((g) => recs[g].length > 0).map((g) => {
           const Icon = GROUP_ICON[g];
           return (
-            <div key={g} className="rounded-md border border-card-border p-3" data-testid={`recgroup-${g}`}>
+            <div key={g} className="rounded-xl border border-card-border bg-background/45 p-4" data-testid={`recgroup-${g}`}>
               <div className="flex items-center gap-2 mb-2">
-                <Icon className="h-4 w-4 text-primary" />
-                <span className="font-semibold text-sm">{g}</span>
-                <span className="text-[10px] text-muted-foreground tnum">{recs[g].length}</span>
+                <span className="h-8 w-8 rounded-lg bg-primary/10 text-primary inline-flex items-center justify-center">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="font-bold text-sm">{g}</span>
+                <span className="ml-auto text-[10px] text-muted-foreground tnum rounded-full bg-muted px-2 py-0.5">{recs[g].length}</span>
               </div>
               <ul className="space-y-2">
                 {recs[g].map((r, i) => (
                   <li key={i} className="text-xs leading-relaxed flex gap-2">
-                    <span className="text-primary mt-1">▸</span>
+                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                     <span>
                       {r.text}{" "}
                       {r.metrics.map((m) => (
@@ -115,10 +117,10 @@ export function RecommendationsPanel({ result }: { result: AuditResult }) {
 export function AemPanel({ result }: { result: AuditResult }) {
   if (!result.aemDetected) {
     return (
-      <div className="rounded-lg border border-card-border bg-card p-5">
+      <div className="rounded-2xl border border-card-border bg-card/92 p-5 shadow-dashboard">
         <div className="flex items-center gap-2 mb-1">
           <Layers className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-semibold text-sm">AEM Detection</h2>
+          <h2 className="font-bold text-sm">AEM Detection</h2>
         </div>
         <p className="text-sm text-muted-foreground">
           No Adobe Experience Manager signals detected on this page.
@@ -135,17 +137,17 @@ export function AemPanel({ result }: { result: AuditResult }) {
     );
   }
   return (
-    <div className="rounded-lg border border-primary/40 bg-accent/40 p-5">
+    <div className="rounded-2xl border border-primary/35 bg-accent/45 p-5 shadow-dashboard">
       <div className="flex items-center gap-2 mb-1">
         <Layers className="h-4 w-4 text-primary" />
-        <h2 className="font-semibold text-sm">AEM Optimization Tips</h2>
+        <h2 className="font-bold text-sm">AEM Optimization Tips</h2>
         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">
           AEM Detected
         </span>
       </div>
       <div className="grid sm:grid-cols-2 gap-2 my-3">
         {result.aemSignals.map((s) => (
-          <div key={s.label} className="text-xs flex items-start gap-2">
+          <div key={s.label} className="text-xs flex items-start gap-2 rounded-lg border border-primary/10 bg-background/35 p-2.5">
             <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${s.detected ? "bg-good" : "bg-muted-foreground/40"}`} />
             <span>
               <span className="font-medium">{s.label}</span>
@@ -170,10 +172,10 @@ export function CdnPanel({ result }: { result: AuditResult }) {
   const cdn = buildCdnAdvice(result);
   const cls = RATING_CLASS[cdn.severity];
   return (
-    <div className="rounded-lg border border-card-border bg-card p-5">
+    <div className="rounded-2xl border border-card-border bg-card/92 p-5 shadow-dashboard">
       <div className="flex items-center gap-2 mb-1">
         <ShieldCheck className="h-4 w-4 text-primary" />
-        <h2 className="font-semibold text-sm">CDN Recommendations</h2>
+        <h2 className="font-bold text-sm">CDN Recommendations</h2>
         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${cls.badge}`}>
           {cdn.severity === "good" ? "Healthy" : cdn.severity === "poor" ? "Action needed" : "Tune"}
         </span>
@@ -182,14 +184,14 @@ export function CdnPanel({ result }: { result: AuditResult }) {
       <ul className="space-y-1.5 mb-4">
         {cdn.points.map((p, i) => (
           <li key={i} className="text-xs leading-relaxed flex gap-2">
-            <span className="text-primary mt-1">▸</span>
+            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
             <span>{p}</span>
           </li>
         ))}
       </ul>
 
       {cdn.recommendEsi && (
-        <div className="text-xs rounded-md border border-poor/40 bg-poor-soft p-3 mb-4">
+        <div className="text-xs rounded-xl border border-poor/40 bg-poor-soft p-3 mb-4">
           <span className="font-semibold text-poor">ESI recommended: </span>
           TTFB is Poor — use Edge Side Includes to cache the static shell while assembling
           dynamic fragments at the edge, so most requests skip the origin.
@@ -199,10 +201,10 @@ export function CdnPanel({ result }: { result: AuditResult }) {
       <h3 className="text-xs font-semibold mb-2 uppercase tracking-wide text-muted-foreground">
         Cache-Control by asset type
       </h3>
-      <div className="overflow-x-auto rounded-md border border-card-border">
+      <div className="overflow-x-auto rounded-xl border border-card-border">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-muted/60 text-left">
+            <tr className="bg-muted/70 text-left">
               <th className="px-3 py-2 font-semibold">Asset</th>
               <th className="px-3 py-2 font-semibold">Cache-Control</th>
               <th className="px-3 py-2 font-semibold hidden sm:table-cell">Note</th>
